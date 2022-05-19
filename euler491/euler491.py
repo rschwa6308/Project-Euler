@@ -40,7 +40,7 @@ def possible_integers(positives, negatives):
 
 
 count = 0
-for positives in set(combinations(DIGITS, 10)):
+for positives in set(combinations(DIGITS, 10)):     # small enough to hold in memory :)
     negatives = list(DIGITS)
     for n in positives:
         negatives.remove(n)
