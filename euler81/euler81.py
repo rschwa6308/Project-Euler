@@ -28,3 +28,5 @@ def min_path(x, y):
 
 
 print(min_path(79, 79))
+
+# => 427337
