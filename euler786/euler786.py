@@ -74,7 +74,7 @@ def reflect_point_over_line(p, segment):
 
 
 
-def generate_tiling(num_reflections) -> HalfEdgeMesh:
+def generate_tiling(generation_depth) -> HalfEdgeMesh:
     mesh = HalfEdgeMesh()
 
     # original kite
@@ -85,14 +85,16 @@ def generate_tiling(num_reflections) -> HalfEdgeMesh:
     D = Vertex([1/2, -r3/2], color="blue")
     for v in [A, B, C, D]: mesh.add_vertex(v)
 
-    mesh.add_face([A, D, C, B], color="gray")
+    face = mesh.add_face([A, D, C, B], color="gray")
+    face.generation = 0
 
     mesh.link_twins()
 
     # add a reflection over all boundary (i.e. un-twinned) edges
     reflections_count = 0
     for he in mesh.halfedges:
-        if reflections_count >= num_reflections: break
+        # if reflections_count >= num_reflections: break
+        if he.face.generation >= generation_depth: continue
 
         if he.twin is not None: continue
 
@@ -115,8 +117,8 @@ def generate_tiling(num_reflections) -> HalfEdgeMesh:
             dr = Vertex(dr_pos, color=d.color)
             mesh.add_vertex(dr)
 
-        mesh.add_face([b, a, dr, cr], color="wheat")
-
+        face = mesh.add_face([b, a, dr, cr], color="wheat")
+        face.generation = he.face.generation + 1
 
         mesh.link_twins()           # TODO: do this explicitly!
 
@@ -130,17 +132,17 @@ def generate_tiling(num_reflections) -> HalfEdgeMesh:
 
 
 if __name__ == "__main__":
-    num_reflections = 1000
+    depth = 40
 
     print("Generating tiling... ", end="", flush=True)
-    tiling = generate_tiling(num_reflections)
+    tiling = generate_tiling(depth)
     print("done")
 
     transform =  Affine2D().skew_deg(-30, 0) + Affine2D().scale(1, 2/np.sqrt(3))
     # transform = None
 
     fig, ax = plot_mesh(tiling, transform)
-    ax.set_title(f"num_reflections = {num_reflections}")
+    ax.set_title(f"depth = {depth}")
 
     x_lo, x_hi = np.round(ax.get_xlim())
     y_lo, y_hi = np.round(ax.get_ylim())
@@ -148,5 +150,5 @@ if __name__ == "__main__":
     ax.set_yticks(np.arange(y_lo, y_hi+1))
     ax.grid()
 
-    plt.savefig(f"euler786/images/num_reflections={num_reflections}.png", bbox_inches="tight")
+    plt.savefig(f"euler786/images/depth={depth}.png", bbox_inches="tight")
     plt.show()
