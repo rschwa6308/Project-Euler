@@ -1,11 +1,21 @@
+from copy import deepcopy
 from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.collections import LineCollection
+from matplotlib.transforms import Affine2D
 import numpy as np
 
 from HalfEdgeMesh import HalfEdgeMesh, Vertex, Face, HalfEdge
 
-def plot_mesh(mesh: HalfEdgeMesh):
+def plot_mesh(mesh: HalfEdgeMesh, transform: Affine2D = None):
+    if transform is not None:
+        # mesh_transformed = deepcopy(mesh)         # TODO: recursion error
+        mesh_transformed = mesh
+        for vertex in mesh_transformed.vertices:
+            vertex.position = transform.transform(vertex.position)
+
+        return plot_mesh(mesh_transformed, None)
+
     # get bounding box extent
     points = np.array([v.position for v in mesh.vertices])
     width, height = np.ptp(points, axis=0)
@@ -14,6 +24,7 @@ def plot_mesh(mesh: HalfEdgeMesh):
     print(width, height)
 
     plot_size_inches = np.clip(plot_size_inches, None, 40)
+    print(plot_size_inches)
 
     fig, ax = plt.subplots(figsize=(plot_size_inches, plot_size_inches))
     for he in mesh.halfedges:
@@ -119,14 +130,23 @@ def generate_tiling(num_reflections) -> HalfEdgeMesh:
 
 
 if __name__ == "__main__":
-    num_reflections = 10_000
+    num_reflections = 1000
 
     print("Generating tiling... ", end="", flush=True)
     tiling = generate_tiling(num_reflections)
     print("done")
 
-    fig, ax = plot_mesh(tiling)
+    transform =  Affine2D().skew_deg(-30, 0) + Affine2D().scale(1, 2/np.sqrt(3))
+    # transform = None
+
+    fig, ax = plot_mesh(tiling, transform)
     ax.set_title(f"num_reflections = {num_reflections}")
+
+    x_lo, x_hi = np.round(ax.get_xlim())
+    y_lo, y_hi = np.round(ax.get_ylim())
+    ax.set_xticks(np.arange(x_lo, x_hi+1))
+    ax.set_yticks(np.arange(y_lo, y_hi+1))
+    ax.grid()
 
     plt.savefig(f"euler786/images/num_reflections={num_reflections}.png", bbox_inches="tight")
     plt.show()
